@@ -832,6 +832,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5270460578573696607, guid: 4d7e81b95de3e7945b20a221902660d3, type: 3}
+      propertyPath: LogLevel
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5270460578573696607, guid: 4d7e81b95de3e7945b20a221902660d3, type: 3}
+      propertyPath: NetworkConfig.PlayerPrefab
+      value: 
+      objectReference: {fileID: 7201686784607217813, guid: 9723baa42a8a83041b7d16d0a8c880ea, type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4d7e81b95de3e7945b20a221902660d3, type: 3}
 --- !u!1001 &6008307872512659829
