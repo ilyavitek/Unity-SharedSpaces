@@ -83,6 +83,10 @@ public class SharedSpacesApplication : MonoBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        Debug.Log($"OnClientConnected {clientId}");
+        Debug.Log($"OnClientConnected {NetworkManager.Singleton}");
+        Debug.Log($"!!!Session IS NULL: {session == null}");
+        Debug.Log($"NetworkManager.Singleton.IsHost {NetworkManager.Singleton.IsHost}");
         if (NetworkManager.Singleton.IsHost)
         {
             if (session == null)
@@ -170,11 +174,13 @@ public class SharedSpacesApplication : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("SharedSpacesApplication Start");
         StartCoroutine(Init());
     }
 
     private IEnumerator Init()
     {
+        Debug.Log("SharedSpacesApplication Init");
         Core.AsyncInitialize().OnComplete(OnOculusPlatformInitialized);
 
 #if !UNITY_EDITOR && !UNITY_STANDALONE_WIN
@@ -183,6 +189,8 @@ public class SharedSpacesApplication : MonoBehaviour
 #else
         launchType = LaunchType.Normal;
 #endif
+        
+        Debug.Log("SharedSpacesApplication launchType: " + launchType);
 
         // start in the lobby
         if (launchType == LaunchType.Normal)
@@ -198,11 +206,14 @@ public class SharedSpacesApplication : MonoBehaviour
             );
         }
 
+        Debug.Log("WaitUntil groupPresenceState != null && groupPresenceState.destination != null");
         yield return new WaitUntil(() => groupPresenceState != null && groupPresenceState.destination != null);
 
+        Debug.Log($"LoadScene: {groupPresenceState.destination}");
         sceneLoader.LoadScene(groupPresenceState.destination);
         yield return new WaitUntil(() => sceneLoader.sceneLoaded);
 
+        Debug.Log("SharedSpacesApplication networkLayer.Init");
         networkLayer.Init(GetPhotonRoomName());
     }
 
