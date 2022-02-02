@@ -89,10 +89,6 @@ public class SharedSpacesApplication : MonoBehaviour
         Debug.Log($"NetworkManager.Singleton.IsHost {NetworkManager.Singleton.IsHost}");
         if (NetworkManager.Singleton.IsHost)
         {
-            if (session == null)
-            {
-                session = spawner.SpawnSession().GetComponent<SharedSpacesSession>();
-            }
             session.DetermineFallbackHost(clientId);
             session.SetPhotonVoiceRoom(clientId);
         }
@@ -131,12 +127,7 @@ public class SharedSpacesApplication : MonoBehaviour
 
     private void OnHostStarted()
     {
-        Debug.Log("OnHostStarted");
-
-        if (session == null)
-        {
-            session = spawner.SpawnSession().GetComponent<SharedSpacesSession>();
-        }
+        session = spawner.SpawnSession().GetComponent<SharedSpacesSession>();
 
         NetworkObject player = spawner.SpawnPlayer(
             NetworkManager.Singleton.LocalClientId,
