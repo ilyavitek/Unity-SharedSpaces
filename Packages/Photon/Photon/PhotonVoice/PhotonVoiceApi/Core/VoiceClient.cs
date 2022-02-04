@@ -35,66 +35,6 @@ namespace Photon.Voice
         string PlayerIdStr(int playerId);
     }
 
-    // Encapsulates byte array slice, FrameFlags and dispose Action
-    // Voice Core calls dispose Action immediately after processing the FrameBuffer
-    public struct FrameBuffer
-    {
-        readonly byte[] array;
-        readonly int offset;
-        readonly int count;
-        readonly Action release;
-
-        public FrameBuffer(byte[] array, int offset, int count, FrameFlags flags, Action dispose)
-        {
-            this.array = array;
-            this.offset = offset;
-            this.count = count;
-            this.Flags = flags;
-            this.release = dispose;
-        }
-
-        public FrameBuffer(byte[] array, FrameFlags flags)
-        {
-            this.array = array;
-            this.offset = 0;
-            this.count = array == null ? 0 : array.Length;
-            this.Flags = flags;
-            this.release = null;
-        }
-
-        public int Length { get { return count; } }
-        public FrameFlags Flags { get; }
-
-        // Copies array slice to the provided array (reallocating larger array if needed) or returns original array if possible.
-        public byte[] GetArrayAndRelease(ref byte[] copyToArray)
-        {
-         	try
-            {
-                if (array == null)
-                {
-                    return null;
-                }
-                if (offset == 0 && count == array.Length)
-                {
-                    return array;
-                }
-                if (copyToArray == null || copyToArray.Length < count)
-                {
-                    copyToArray = new byte[count];
-                }
-                Buffer.BlockCopy(array, offset, copyToArray, 0, count);
-                return copyToArray;
-            }
-            finally
-            {
-                if (release != null)
-                {
-                    release();
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Voice client interact with other clients on network via IVoiceTransport.
     /// </summary>        
@@ -196,6 +136,16 @@ namespace Photon.Voice
             }
         }
 
+        public void LogStats()
+        {
+            int dc = FrameBuffer.statDisposerCreated;
+            int dd = FrameBuffer.statDisposerDisposed;
+            int pp = FrameBuffer.statPinned;
+            int pu = FrameBuffer.statUnpinned;
+            this.logger.LogInfo("[PV] FrameBuffer stats Disposer: " + dc + " - " + dd + " = " + (dc - dd));
+            this.logger.LogInfo("[PV] FrameBuffer stats Pinned: " + pp + " - " + pu + " = " + (pp - pu));
+        }
+        
         public void SetRemoteVoiceDelayFrames(Codec codec, int delayFrames)
         {
             remoteVoiceDelayFrames[codec] = delayFrames;
@@ -415,9 +365,14 @@ namespace Photon.Voice
         /// <param name="channelId">Transport channel specific to transport.</param>
         /// <param name="encoder">Encoder compressing video data. Set to null to use default VP8 implementation.</param>
         /// <returns>Outgoing stream handler.</returns>
-        public LocalVoiceVideo CreateLocalVoiceVideo(VoiceInfo voiceInfo, IEncoder encoder, int channelId = 0)
+        public LocalVoiceVideo CreateLocalVoiceVideo(VoiceInfo voiceInfo, IVideoRecorder recorder, int channelId = 0)
         {
-            return (LocalVoiceVideo)createLocalVoice(channelId, (vId, chId) => new LocalVoiceVideo(this, encoder, vId, voiceInfo, chId));
+            var lv = (LocalVoiceVideo)createLocalVoice(channelId, (vId, chId) => new LocalVoiceVideo(this, recorder.Encoder, vId, voiceInfo, chId));
+            if (recorder is IVideoRecorderPusher)
+            {
+                (recorder as IVideoRecorderPusher).VideoSink = lv;
+            }
+            return lv;
         }
 #endif
 
@@ -686,7 +641,7 @@ namespace Photon.Voice
         }
 
         Random rnd = new Random();
-        internal void onFrame(int channelId, int playerId, byte voiceId, byte evNumber, FrameBuffer receivedBytes, bool isLocalPlayer)
+        internal void onFrame(int channelId, int playerId, byte voiceId, byte evNumber, ref FrameBuffer receivedBytes, bool isLocalPlayer)
         {
             if (isLocalPlayer)
             {
@@ -723,7 +678,7 @@ namespace Photon.Voice
                 RemoteVoice voice = null;
                 if (playerVoices.TryGetValue(voiceId, out voice))
                 {
-                    voice.receiveBytes(receivedBytes, evNumber);
+                    voice.receiveBytes(ref receivedBytes, evNumber);
                 }
                 else
                 {

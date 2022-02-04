@@ -5,7 +5,7 @@ using UnityEngine;
 #if !UNITY_EDITOR && !UNITY_STANDALONE_WIN
 using UnityEngine.Android;
 #endif
-using MLAPI;
+using Unity.Netcode;
 using Photon.Voice.Unity;
 using Photon.Voice.Unity.UtilityScripts;
 
